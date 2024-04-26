@@ -22,8 +22,6 @@ install_dependencies() {
 # /dev/nvme0n1p1 will be mounted to /mnt/data, and /dev/nvme0n1p{2..N} will 
 # be mounted to /mnt/sst/node-x, which holds SST files from node-x in Rubble
 partition_disk() {
-    lsblk
-
     local shard_num=$1
     local rf=$2
 
@@ -44,17 +42,41 @@ partition_disk() {
 
     +"
 
+    local partition_str_4="n
+    p
+
+    +"
+
     local sync_str="w
     "
 
     local cmd_str="$partition_str"${data_part_size}"$unit_str"
 
-    for (( i=0; i<$remote_node_num; i++ ))
-    do
+    for (( i=0; i<$remote_node_num; i++ )) do
+    if [ $i -lt 3 ] 
+    then
         cmd_str="${cmd_str}${partition_str}"${sst_part_size}"${unit_str}"
+    else
+        cmd_str="${cmd_str}${partition_str_4}"${sst_part_size}"${unit_str}"
+    fi
     done
     cmd_str="${cmd_str}${sync_str}"
+    echo "$cmd_str"
+    local cmd_delete="d
+    
+    
+    d
 
+
+    d
+
+
+    d
+
+
+    w
+    "
+    echo "$cmd_delete" | fdisk $nvme_dev
     echo "$cmd_str" | fdisk $nvme_dev
     
     while [[ -z $(lsblk | grep nvme0n1p2) ]]; do
@@ -66,9 +88,9 @@ partition_disk() {
         yes | mkfs.ext4 $dev
     done
 
-    mkdir $DATA_PATH $SST_PATH
+    mkdir -p $DATA_PATH $SST_PATH
     mount_local_disk $rf ""
-
+    echo ""
     lsblk
 }
 
@@ -82,8 +104,8 @@ setup_grpc() {
     export PATH="$PATH:$MY_INSTALL_DIR/bin"
 
     cd ${DATA_PATH}
-
-    git clone --recurse-submodules -b v${GPRC_VERSION} https://github.com/grpc/grpc
+    rm -rf ./grpc
+    git clone https://github.com/J-XZ/grpc.git
 
     cd grpc
     mkdir -p cmake/build
@@ -92,7 +114,7 @@ setup_grpc() {
         -DgRPC_BUILD_TESTS=OFF \
         -DCMAKE_INSTALL_PREFIX=$MY_INSTALL_DIR \
         ../..
-    make -j${NUM_JOBS}
+    make -j
     make install
     popd
 
@@ -103,6 +125,7 @@ setup_grpc() {
     pushd cmake/build
     cmake -DCMAKE_PREFIX_PATH=$MY_INSTALL_DIR ../..
     make -j
+    popd
 
     echo "export PATH=/root:$PATH" >> /root/.bashrc
     source /root/.bashrc
@@ -118,8 +141,8 @@ setup_rocksdb() {
     
     cd ${DATA_PATH}
 
-    git clone --branch rubble https://github.com/lei-houjyu/rocksdb.git
-
+    git clone --branch rubble https://github.com/J-XZ/rubble_rocksdb.git
+    mv rubble_rocksdb rocksdb
     cd rocksdb
 
     bash build.sh
@@ -151,7 +174,7 @@ setup_rocksdb() {
     lsblk
 }
 
-source /root/helper.sh
+source /users/ruixuan/code/rubbledb/helper.sh
 install_dependencies
 partition_disk $1 $2
 setup_grpc
