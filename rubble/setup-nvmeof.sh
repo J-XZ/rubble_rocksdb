@@ -69,7 +69,7 @@ setup_as_host() {
     modprobe nvme-rdma
 
     nvme discover -t rdma -a $target_ip -s 4420
-    nvme connect -t rdma -n $subsys -a $target_ip -s 4420 -N /dev/nvme${nvme_id}n1
+    nvme connect -t rdma -n $subsys -a $target_ip -s 4420
     while [ "$(nvme list)" == "$before" ]
     do
         sleep 1
