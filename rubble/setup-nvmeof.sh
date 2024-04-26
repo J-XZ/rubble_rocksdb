@@ -87,7 +87,7 @@ then
     exit
 fi
 
-source /root/helper.sh
+source ~/code/rubbledb/helper.sh
 
 if [ $1 == "target" ]
 then
