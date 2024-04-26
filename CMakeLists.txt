@@ -332,6 +332,7 @@ option(FAIL_ON_WARNINGS "Treat compile warnings as errors" ON)
 if(FAIL_ON_WARNINGS)
   if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+  endif()
 endif()
 
 option(WITH_ASAN "build with ASAN" OFF)
