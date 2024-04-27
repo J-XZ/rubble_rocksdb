@@ -30,57 +30,43 @@ partition_disk() {
     local remote_node_num=$(( rf - 1 ))
     local shard_per_node=$(( shard_num / rf ))
     local sst_part_size=$(( shard_per_node * pool_size ))
+
+    for dev in `ls ${nvme_dev}p*`
+    do
+        wipefs $dev
+    done
     
     wipefs $nvme_dev
 
     local unit_str="G
     "
-
     local partition_str="n
-    p
-
-
+    
+    
     +"
-
-    local partition_str_4="n
-    p
-
-    +"
-
     local sync_str="w
     "
-
-    local cmd_str="$partition_str"${data_part_size}"$unit_str"
+    local use_gpt="g
+    "
+    local yes="Y
+    "
+    local cmd_str="$use_gpt$partition_str${data_part_size}$unit_str"
 
     for (( i=0; i<$remote_node_num; i++ )) do
-    if [ $i -lt 3 ] 
-    then
-        cmd_str="${cmd_str}${partition_str}"${sst_part_size}"${unit_str}"
-    else
-        cmd_str="${cmd_str}${partition_str_4}"${sst_part_size}"${unit_str}"
-    fi
+        cmd_str="${cmd_str}${partition_str}${sst_part_size}${unit_str}"
     done
+    
     cmd_str="${cmd_str}${sync_str}"
     echo "$cmd_str"
-    local cmd_delete="d
-    
-    
-    d
-
-
-    d
-
-
-    d
-
-
-    w
-    "
-    echo "$cmd_delete" | fdisk $nvme_dev
     echo "$cmd_str" | fdisk $nvme_dev
     
     while [[ -z $(lsblk | grep nvme0n1p2) ]]; do
         sleep 1
+    done
+
+    for dev in `ls ${nvme_dev}p*`
+    do
+        umount $dev
     done
 
     for dev in `ls ${nvme_dev}p*`
@@ -90,8 +76,6 @@ partition_disk() {
 
     mkdir -p $DATA_PATH $SST_PATH
     mount_local_disk $rf ""
-    echo ""
-    lsblk
 }
 
 setup_grpc() {
@@ -150,6 +134,7 @@ setup_rocksdb() {
     cd rubble
 
     local nid=$( get_nid )
+    echo "nid=$nid"
     for (( sid=0; sid<${shard_num}; sid++ ));
     do
         for f in db sst_dir;
@@ -161,7 +146,10 @@ setup_rocksdb() {
         then
             local primary_node=$( sid_to_nid $sid $rf )
             local shard_dir=${SST_PATH}/node-${primary_node}/shard-${sid}
-            bash create-sst-pool.sh 16777216 1 5000 ${shard_dir} ${nid} ${sid} > /dev/null 2>&1
+            echo "primary_node=$primary_node"
+            echo "shard_dir=$shard_dir"
+            echo "create-sst-pool.sh shard_dir=${shard_dir} node_id:${nid} shard_id:${sid}"
+            bash create-sst-pool.sh 16777216 1 5000 ${shard_dir} ${nid} ${sid}
         fi
     done
     wait
