@@ -133,7 +133,7 @@ setup_rocksdb() {
 
     cd rubble
 
-    local nid=$( get_nid )
+    nid=$( get_nid )
     echo "nid=$nid"
     for (( sid=0; sid<${shard_num}; sid++ ));
     do
@@ -141,21 +141,23 @@ setup_rocksdb() {
         do
             mkdir -p ${DATA_PATH}/db/shard-${sid}/${f} 
         done
-        local ret=$( is_head $nid $sid $rf )
+        ret=$( is_head $nid $sid $rf )
         if [ "$ret" == "false" ]
         then
-            local primary_node=$( sid_to_nid $sid $rf )
-            local shard_dir=${SST_PATH}/node-${primary_node}/shard-${sid}
+            primary_node=$( sid_to_nid $sid $rf )
+            shard_dir=${SST_PATH}/node-${primary_node}/shard-${sid}
             echo "primary_node=$primary_node"
             echo "shard_dir=$shard_dir"
             echo "create-sst-pool.sh shard_dir=${shard_dir} node_id:${nid} shard_id:${sid}"
-            bash create-sst-pool.sh 16777216 1 5000 ${shard_dir} ${nid} ${sid}
+            
+            bash create-sst-pool.sh 16777216 1 5000 ${shard_dir} ${nid} ${sid} &
         fi
     done
     wait
 
     for dev in `ls ${nvme_dev}p*`
     do
+        echo "umount $dev"
         umount $dev
     done
 
