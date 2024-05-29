@@ -214,6 +214,7 @@ rocksdb::DB* GetDBInstance(const string& db_path, const string& sst_dir,
 
    std::string current_fname = rocksdb::CurrentFileName(db_path);
 
+   cout<<"current_fname: "<<current_fname<<std::endl<<std::flush;
    // It's not a clean start
    s = db_options.env->FileExists(current_fname);
    assert(!s.ok());

@@ -112,3 +112,4 @@ rubble/LOG*
 *.perf
 *.folded
 
+rubble/db_node
